@@ -142,8 +142,8 @@ def Update(metadata, media, lang, force, movie):
   dict_tvdb4                                                    =       tvdb4.GetMetadata(media, movie,                  source,          TVDBid,                 mappingList)
   dict_TheTVDB,                             IMDbid              =   TheTVDBv2.GetMetadata(media, movie, error_log, lang, source, AniDBid, TVDBid, IMDbid,         mappingList)
   dict_AniDB, ANNid, MALids                                     =       AniDB.GetMetadata(media, movie, error_log,       source, AniDBid, TVDBid, AnimeLists.AniDBMovieSets, mappingList)
-  dict_Shikimori                                                =   Shikimori.GetMetadata(AniDBid) # <-- НОВЫЙ ВЫЗОВ
-  dict_TheMovieDb,          TSDbid, TMDbid, IMDbid              =  TheMovieDb.GetMetadata(media, movie,                                   TVDBid, TMDbid, IMDbid)
+  dict_Shikimori                                                =   Shikimori.GetMetadata(AniDBid)
+  dict_TheMovieDb,          TSDbid, TMDbid, IMDbid              =  TheMovieDb.GetMetadata(media, movie, AniDBid,          TVDBid, TMDbid, IMDbid) # <-- ИЗМЕНЕННЫЙ ВЫЗОВ
   dict_FanartTV                                                 =    FanartTV.GetMetadata(       movie,                                   TVDBid, TMDbid, IMDbid)
   dict_Plex                                                     =        Plex.GetMetadata(metadata, error_log, TVDBid, Dict(dict_TheTVDB, 'title'))
   dict_TVTunes                                                  =     TVTunes.GetMetadata(metadata, Dict(dict_TheTVDB, 'title'), Dict(mappingList, AniDBid, 'name'))  #Sources[m:eval('dict_'+m)]
@@ -161,7 +161,7 @@ def Update(metadata, media, lang, force, movie):
   common.UpdateMeta(metadata, media, movie, {'AnimeLists': dict_AnimeLists, 'AniDB':       dict_AniDB,       'TheTVDB': dict_TheTVDB, 'TheMovieDb': dict_TheMovieDb, 
                                              'FanartTV':   dict_FanartTV,   'tvdb4':       dict_tvdb4,       'Plex':    dict_Plex,    'TVTunes':    dict_TVTunes, 
                                              'OMDb':       dict_OMDb,       'Local':       dict_Local,       'AniList': dict_AniList, 'MyAnimeList': dict_MyAnimeList,
-                                             'Shikimori':  dict_Shikimori}, mappingList) # <-- НОВЫЙ ИСТОЧНИК
+                                             'Shikimori':  dict_Shikimori}, mappingList)
   Log.Info("end: {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")))
   Log.Close()
 
