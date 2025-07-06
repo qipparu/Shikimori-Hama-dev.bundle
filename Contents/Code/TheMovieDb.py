@@ -15,11 +15,11 @@ TMDB_MOVIE_SEARCH           = 'https://api.tmdb.org/3/search/movie?api_key=%s&qu
 TMDB_DETAILS_URL            = 'https://api.themoviedb.org/3/{mode}/{id}?api_key=%s&append_to_response=credits,external_ids&language=ru' % TMDB_API_KEY
 TMDB_SERIE_SEARCH_BY_TVDBID = "https://api.TheMovieDb.org/3/find/{id}?api_key=%s&external_source=tvdb_id&append_to_response=releases,credits,trailers,external_ids&language=en" % TMDB_API_KEY
 TMDB_CONFIG_URL             = 'https://api.tmdb.org/3/configuration?api_key=%s' % TMDB_API_KEY
-TMDB_IMAGES_URL             = 'https://api.tmdb.org/3/{mode}/{id}/images?api_key=%s&include_image_language=ru,en,null' % TMDB_API_KEY
+TMDB_IMAGES_URL             = 'https://api.tmdb.org/3/{mode}/{id}/images?api_key=%s&include_image_language=' % TMDB_API_KEY
 
 
 ### ###
-def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid):
+def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
   Log.Info("=== TheMovieDb.GetMetadata() ===".ljust(157, '='))
   TheMovieDb_dict = {}
   TSDbid          = ""
@@ -158,6 +158,56 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid):
             (os.path.join('TheMovieDb', 'artwork', backdrop.get('file_path').lstrip('/')), rank, image_base_url + 'w300' + backdrop.get('file_path')),
             TheMovieDb_dict, 'art', art_url
         )
+
+    # --- Получение изображений для сезонов ---
+    if not movie and media and hasattr(media, 'seasons'):
+        Log.Info("--- Fetching TMDB season images ---".ljust(157, '-'))
+        TMDB_SEASON_IMAGES_URL_TEMPLATE = 'https://api.themoviedb.org/3/tv/{id}/season/{season_number}/images?api_key=%s&include_image_language=' % TMDB_API_KEY
+        
+        for local_season_num_str in media.seasons:
+            if not str(local_season_num_str).isdigit():
+                continue
+            
+            # --- Логика определения удаленного сезона ---
+            season_to_fetch = local_season_num_str  # По умолчанию, соответствие 1-в-1
+
+            # Если в Plex для этого шоу только один сезон, И это сезон №1,
+            # то мы можем предположить, что это отдельный элемент для сиквела/продолжения.
+            # В этом случае, мы должны доверять `defaulttvdbseason` из файла маппинга,
+            # который укажет на правильный номер сезона на TVDB/TMDB.
+            if len(media.seasons) == 1 and local_season_num_str == '1':
+                default_season = Dict(mappingList, 'defaulttvdbseason')
+                if default_season and default_season.isdigit():
+                    season_to_fetch = default_season
+            
+            Log.Info("Processing TMDB images for local season {} (fetching as remote season {})".format(local_season_num_str, season_to_fetch))
+            season_images_url = TMDB_SEASON_IMAGES_URL_TEMPLATE.format(id=tmdb_id_final, season_number=season_to_fetch)
+            
+            season_images_json = common.LoadFile(
+                filename="TMDB-season-images-{}-{}.json".format(tmdb_id_final, season_to_fetch),
+                relativeDirectory=os.path.join('TheMovieDb', 'json', 'seasons'),
+                url=season_images_url,
+                cache=CACHE_1WEEK
+            )
+            
+            if season_images_json and Dict(season_images_json, 'posters'):
+                sorted_season_posters = sorted(Dict(season_images_json, 'posters', default=[]), key=sort_key)
+                
+                for i, poster in enumerate(sorted_season_posters):
+                    lang = poster.get('iso_639_1') or 'xx'
+                    rank = get_rank('posters', lang, i)
+                    poster_url = image_base_url + 'original' + poster.get('file_path')
+                    
+                    Log.Info("[ ] Season {} Poster (lang: {}, rank: {}, res: {}x{}): {}".format(local_season_num_str, lang, rank, poster.get('width'), poster.get('height'), poster_url))
+                    
+                    # Сохраняем постер для локального номера сезона с уникальным путем для кэша
+                    poster_filename = poster.get('file_path').lstrip('/')
+                    cache_path = os.path.join('TheMovieDb', 'poster', 'seasons', tmdb_id_final, poster_filename)
+
+                    SaveDict(
+                        (cache_path, rank, None),
+                        TheMovieDb_dict, 'seasons', str(local_season_num_str), 'posters', poster_url
+                    )
 
   Log.Info("--- return ---".ljust(157, '-'))
   Log.Info("TheMovieDb_dict: {}".format(DictString(TheMovieDb_dict, 4)))
