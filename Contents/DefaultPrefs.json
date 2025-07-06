@@ -1,5 +1,6 @@
 [
   { "id": "reset_to_defaults",        "label": "Reset to Defaults",               "type": "bool",  "default": "false"                                                          },
+  { "id": "prioritize_season_poster", "label": "Prioritize season poster over series poster (TheMovieDb)", "type": "bool", "default": "false"                                  },
   { "id": "SerieLanguagePriority",    "label": "Serie Language Priority",         "type": "text",  "default": "main, en, ja"                                                   },
   { "id": "EpisodeLanguagePriority",  "label": "Episode Language Priority",       "type": "text",  "default": "main, en, ja"                                                   },
   { "id": "PosterLanguagePriority",   "label": "TheTVDB Poster Language Priority","type": "text",  "default": "en"                                                             },
