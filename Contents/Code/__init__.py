@@ -143,7 +143,7 @@ def Update(metadata, media, lang, force, movie):
   dict_TheTVDB,                             IMDbid              =   TheTVDBv2.GetMetadata(media, movie, error_log, lang, source, AniDBid, TVDBid, IMDbid,         mappingList)
   dict_AniDB, ANNid, MALids                                     =       AniDB.GetMetadata(media, movie, error_log,       source, AniDBid, TVDBid, AnimeLists.AniDBMovieSets, mappingList)
   dict_Shikimori                                                =   Shikimori.GetMetadata(AniDBid)
-  dict_TheMovieDb,          TSDbid, TMDbid, IMDbid              =  TheMovieDb.GetMetadata(media, movie, AniDBid,          TVDBid, TMDbid, IMDbid) # <-- ИЗМЕНЕННЫЙ ВЫЗОВ
+  dict_TheMovieDb,          TSDbid, TMDbid, IMDbid              =  TheMovieDb.GetMetadata(media, movie, AniDBid,          TVDBid, TMDbid, IMDbid, mappingList)
   dict_FanartTV                                                 =    FanartTV.GetMetadata(       movie,                                   TVDBid, TMDbid, IMDbid)
   dict_Plex                                                     =        Plex.GetMetadata(metadata, error_log, TVDBid, Dict(dict_TheTVDB, 'title'))
   dict_TVTunes                                                  =     TVTunes.GetMetadata(metadata, Dict(dict_TheTVDB, 'title'), Dict(mappingList, AniDBid, 'name'))  #Sources[m:eval('dict_'+m)]

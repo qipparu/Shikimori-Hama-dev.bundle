@@ -19,7 +19,7 @@ TMDB_IMAGES_URL             = 'https://api.tmdb.org/3/{mode}/{id}/images?api_key
 
 
 ### ###
-def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid):
+def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
   Log.Info("=== TheMovieDb.GetMetadata() ===".ljust(157, '='))
   TheMovieDb_dict = {}
   TSDbid          = ""
@@ -119,7 +119,7 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid):
         return (priority, -resolution, -rating)
     
     # --- Логика ранжирования для Plex ---
-    def get_rank(image_type, lang, adjustment):
+    def get_rank(image_type, lang, adjustment, priority_boost=0):
         source = 'TheMovieDb'
         source_priority_list = [s.strip() for s in Prefs[image_type].split(',')]
         try:
@@ -132,7 +132,7 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid):
         except ValueError:
             lang_rank = len(lang_priority)
 
-        final_rank = (source_rank * 20) + (lang_rank * 5) + adjustment + 1
+        final_rank = (source_rank * 20) + (lang_rank * 5) + adjustment + 1 - priority_boost
         return min(final_rank, 100)
 
     # Постеры
@@ -158,6 +158,62 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid):
             (os.path.join('TheMovieDb', 'artwork', backdrop.get('file_path').lstrip('/')), rank, image_base_url + 'w300' + backdrop.get('file_path')),
             TheMovieDb_dict, 'art', art_url
         )
+
+    # --- Получение изображений для сезонов ---
+    if not movie and media and hasattr(media, 'seasons'):
+        Log.Info("--- Fetching TMDB season images ---".ljust(157, '-'))
+        TMDB_SEASON_IMAGES_URL_TEMPLATE = 'https://api.themoviedb.org/3/tv/{id}/season/{season_number}/images?api_key=%s&include_image_language=ru,en,null' % TMDB_API_KEY
+        
+        # Проверка, нужно ли приоритезировать постер сезона
+        prioritize_season_posters = Prefs['prioritize_season_poster'] and len(media.seasons) == 1
+
+        for local_season_num_str in media.seasons:
+            if not str(local_season_num_str).isdigit():
+                continue
+            
+            # --- Логика определения удаленного сезона ---
+            season_to_fetch = local_season_num_str
+            if len(media.seasons) == 1 and local_season_num_str == '1':
+                default_season = Dict(mappingList, 'defaulttvdbseason')
+                if default_season and default_season.isdigit():
+                    season_to_fetch = default_season
+            
+            Log.Info("Processing TMDB images for local season {} (fetching as remote season {})".format(local_season_num_str, season_to_fetch))
+            season_images_url = TMDB_SEASON_IMAGES_URL_TEMPLATE.format(id=tmdb_id_final, season_number=season_to_fetch)
+            
+            season_images_json = common.LoadFile(
+                filename="TMDB-season-images-{}-{}.json".format(tmdb_id_final, season_to_fetch),
+                relativeDirectory=os.path.join('TheMovieDb', 'json', 'seasons'),
+                url=season_images_url,
+                cache=CACHE_1WEEK
+            )
+            
+            if season_images_json and Dict(season_images_json, 'posters'):
+                sorted_season_posters = sorted(Dict(season_images_json, 'posters', default=[]), key=sort_key)
+                
+                for i, poster in enumerate(sorted_season_posters):
+                    lang = poster.get('iso_639_1') or 'xx'
+                    poster_url = image_base_url + 'original' + poster.get('file_path')
+                    poster_filename = poster.get('file_path').lstrip('/')
+                    cache_path = os.path.join('TheMovieDb', 'poster', 'seasons', tmdb_id_final, poster_filename)
+
+                    # Логика для постеров сезона
+                    rank = get_rank('posters', lang, i)
+                    Log.Info("[ ] Season {} Poster (lang: {}, rank: {}, res: {}x{}): {}".format(local_season_num_str, lang, rank, poster.get('width'), poster.get('height'), poster_url))
+                    SaveDict(
+                        (cache_path, rank, None),
+                        TheMovieDb_dict, 'seasons', str(local_season_num_str), 'posters', poster_url
+                    )
+
+                    # Логика для приоритезации постера сезона как постера сериала
+                    if prioritize_season_posters:
+                        priority_rank = get_rank('posters', lang, i, priority_boost=20) # Увеличиваем приоритет на 20
+                        Log.Info("    -> Prioritizing as series poster with rank {}".format(priority_rank))
+                        SaveDict(
+                            (cache_path, priority_rank, None),
+                            TheMovieDb_dict, 'posters', poster_url
+                        )
+
 
   Log.Info("--- return ---".ljust(157, '-'))
   Log.Info("TheMovieDb_dict: {}".format(DictString(TheMovieDb_dict, 4)))
