@@ -93,12 +93,12 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
 
   # --- Получение изображений ---
   Log.Info("--- Fetching images ---".ljust(157, '-'))
-  
+
   image_cache_time = CACHE_1WEEK
   if Prefs['TmdbForcePosterRefresh']:
       Log.Info("Forcing poster refresh for TheMovieDb, ignoring cache.")
       image_cache_time = 0
-
+  
   images_url = TMDB_IMAGES_URL_TEMPLATE.format(id=tmdb_id_final, mode=mode)
   poster_langs_str = Prefs['TmdbPosterLanguages']
   if poster_langs_str:
@@ -218,6 +218,7 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
   Log.Info("TheMovieDb_dict: {}".format(DictString(TheMovieDb_dict, 4)))
   return TheMovieDb_dict, TSDbid, TMDbid, IMDbid
 
+### TMDB movie search ###
 def Search(results, media, lang, manual, movie):
   Log.Info("=== TheMovieDb.Search() ===".ljust(157, '='))
   orig_title = String.Quote(media.name if manual and movie else media.title if movie else media.show)
