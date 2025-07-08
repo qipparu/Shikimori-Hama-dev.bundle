@@ -36,8 +36,7 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
       arm_data = common.LoadFile(
           filename=str(AniDBid) + '_arm_tmdb.json',
           relativeDirectory=os.path.join('TheMovieDb', 'json', 'arm'),
-          url=arm_url,
-          cache=CACHE_1WEEK
+          url=arm_url
       )
       tmdb_id_from_arm = Dict(arm_data, 'themoviedb')
       if tmdb_id_from_arm:
@@ -153,10 +152,7 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
         rank = get_rank('posters', lang, i)
         poster_url = image_base_url + 'original' + poster.get('file_path')
         Log.Info("[ ] Poster (lang: {}, rank: {}, res: {}x{}, rating: {}): {}".format(lang, rank, poster.get('width'), poster.get('height'), poster.get('vote_average'), poster_url))
-        SaveDict(
-            (os.path.join('TheMovieDb', 'poster', poster.get('file_path').lstrip('/')), rank, None),
-            TheMovieDb_dict, 'posters', poster_url
-        )
+        SaveDict((os.path.join('TheMovieDb', 'poster', poster.get('file_path').lstrip('/')), rank, None), TheMovieDb_dict, 'posters', poster_url)
 
     sorted_backdrops = sorted(Dict(images_json, 'backdrops', default=[]), key=sort_key)
     for i, backdrop in enumerate(sorted_backdrops):
@@ -164,10 +160,7 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
         rank = get_rank('art', lang, i)
         art_url = image_base_url + 'original' + backdrop.get('file_path')
         Log.Info("[ ] Art (lang: {}, rank: {}, res: {}x{}, rating: {}): {}".format(lang, rank, backdrop.get('width'), backdrop.get('height'), backdrop.get('vote_average'), art_url))
-        SaveDict(
-            (os.path.join('TheMovieDb', 'artwork', backdrop.get('file_path').lstrip('/')), rank, image_base_url + 'w300' + backdrop.get('file_path')),
-            TheMovieDb_dict, 'art', art_url
-        )
+        SaveDict((os.path.join('TheMovieDb', 'artwork', backdrop.get('file_path').lstrip('/')), rank, image_base_url + 'w300' + backdrop.get('file_path')), TheMovieDb_dict, 'art', art_url)
 
     # --- Получение изображений для сезонов ---
     if not movie and media and hasattr(media, 'seasons'):
