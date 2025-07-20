@@ -798,4 +798,8 @@ def poster_rank(source, image_type, language='en', rank_adjustment=0):
   #Log.Info(" - language: {:<10}, lp_pos: {}, lp_block_size: {}, language_posters: {}".format(language, lp_pos, lp_block_size, language_posters))
   #Log.Info(" - source:   {:<10}, pp_pos: {}, pp_block_size: {}, priority_posters: {}".format(source,   pp_pos, pp_block_size, priority_posters))
   #Log.Info(" - image_type: {}, rank: {}".format(image_type, rank))
+<<<<<<< HEAD
   return rank
+=======
+  return rank
+>>>>>>> 7d19e07 (Перенос файлов из первого репозитория)
