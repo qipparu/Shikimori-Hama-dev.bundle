@@ -452,7 +452,7 @@ def metadata_download(metadata, metatype, url, filename="", num=99, url_thumbnai
     try:
       if filename and Data.Exists(filename):  status += ", Found locally"; file = Data.Load(filename)
       else:
-        file = (ssl_open((url_thumbnail or url).replace('thetvdb.com', 'thetvdb.plexapp.com')) if 'thetvdb.com' in url else False) or ssl_open(url_thumbnail or url)
+        file = ssl_open(url_thumbnail or url)
         if file:  status += ", Downloaded and Saved locally";  SaveFile(filename, file)
       if file:  metatype[ url ] = Proxy.Preview(file, sort_order=num) if url_thumbnail else Proxy.Media(file, sort_order=num) # or metatype[ url ] != proxy_item # proxy_item = 
     except Exception as e:  Log.Info("common.metadata_download() - Exception: {}, url: '{}', filename: '{}'".format(e, url, filename));  return
