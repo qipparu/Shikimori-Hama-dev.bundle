@@ -16,7 +16,7 @@ import AnimeLists
 
 ### Variables ###
 TVDB_API_KEY               = 'A27AD9BE0DA63333'
-TVDB_IMG_ROOT              = 'https://thetvdb.plexapp.com/banners/' 
+TVDB_IMG_ROOT              = 'https://artworks.thetvdb.com/banners/' 
 TVDB_BASE_URL              = 'https://api.thetvdb.com'  #'https://api-beta.thetvdb.com' #tvdb v2 plex proxy site'' # TODO Start using TVDB's production api (TVDB is behind CF) when available and possibly a plex proxy for it
 TVDB_LOGIN_URL             = TVDB_BASE_URL + '/login'
 TVDB_LOGIN_REFRESH_URL     = TVDB_BASE_URL + '/refresh_token'
