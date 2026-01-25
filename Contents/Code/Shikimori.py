@@ -25,7 +25,7 @@ query getAnimeData($id: String!) {
 }
 """.strip()
 
-def GetMetadata(anidb_id=None):
+def GetMetadata(anidb_id=None, mal_id=None):
     """
     Получает метаданные с Shikimori как отдельный источник, используя GraphQL.
     1. Находит Shikimori ID по AniDB ID через ARM API.
@@ -35,21 +35,24 @@ def GetMetadata(anidb_id=None):
     Log.Info("=== Shikimori.GetMetadata() [GraphQL] ===".ljust(157, '='))
     shikimori_dict = {}
 
-    if not anidb_id or not anidb_id.isdigit():
-        Log.Info("No valid AniDB ID provided. Shikimori source skipped.")
+    if mal_id and str(mal_id).isdigit():
+        shikimori_id = str(mal_id)
+        Log.Info("Using provided MAL ID as Shikimori ID: {}".format(shikimori_id))
+    elif anidb_id and anidb_id.isdigit():
+        # --- 1. Получение Shikimori ID (он же MAL ID) через ARM API ---
+        arm_url = ARM_API_URL_TEMPLATE.format(id=anidb_id)
+        Log.Info("Attempting to fetch Shikimori ID from ARM API: {url}".format(url=arm_url))
+
+        arm_data = common.LoadFile(filename=str(anidb_id) + '_arm.json',
+                                   relativeDirectory=os.path.join('Shikimori', 'json', 'arm'),
+                                   url=arm_url,
+                                   cache=CACHE_1WEEK)
+
+        # В контексте нового API, MAL ID - это и есть ID на Shikimori
+        shikimori_id = Dict(arm_data, 'myanimelist')
+    else:
+        Log.Info("No valid AniDB ID or MAL ID provided. Shikimori source skipped.")
         return shikimori_dict
-
-    # --- 1. Получение Shikimori ID (он же MAL ID) через ARM API ---
-    arm_url = ARM_API_URL_TEMPLATE.format(id=anidb_id)
-    Log.Info("Attempting to fetch Shikimori ID from ARM API: {url}".format(url=arm_url))
-
-    arm_data = common.LoadFile(filename=str(anidb_id) + '_arm.json',
-                               relativeDirectory=os.path.join('Shikimori', 'json', 'arm'),
-                               url=arm_url,
-                               cache=CACHE_1WEEK)
-
-    # В контексте нового API, MAL ID - это и есть ID на Shikimori
-    shikimori_id = Dict(arm_data, 'myanimelist')
 
     if not shikimori_id:
         Log.Info("Failed to get Shikimori ID from ARM for AniDB ID {id}.".format(id=anidb_id))

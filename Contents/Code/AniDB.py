@@ -113,11 +113,11 @@ def Search(results, media, lang, manual, movie):
   
   return best_score, n
 
-def GetMetadata(media, movie, error_log, source, AniDBid, TVDBid, AniDBMovieSets, mappingList):
+def GetMetadata(media, movie, error_log, source, AniDBid, TVDBid, TMDbid, IMDbid, AniDBMovieSets, mappingList):
   ''' Download metadata to dict_AniDB, ANNid, MALids
   '''
   Log.Info("=== AniDB.GetMetadata() ===".ljust(157, '='))
-  AniDB_dict, ANNid, MALids = {}, "", {}
+  AniDB_dict, ANNid, MALids, AniDB_TMDbid, AniDB_IMDbid = {}, "", {}, "", ""
   original                  = AniDBid
   anidb_numbering           = source=="anidb" and (movie or max(map(int, media.seasons.keys()))<=1)
   
@@ -358,9 +358,10 @@ def GetMetadata(media, movie, error_log, source, AniDBid, TVDBid, AniDBMovieSets
         if relatedAnime.get('id') not in Dict(mappingList, 'relations_map', AniDBid, relatedAnime.get('type'), default=[]): SaveDict([relatedAnime.get('id')], mappingList, 'relations_map', AniDBid, relatedAnime.get('type'))
 
       # External IDs
-      ANNid = GetXml(xml, "/anime/resources/resource[@type='1']/externalentity/identifier")
-      #MALid = GetXml(xml, "/anime/resources/resource[@type='2']/externalentity/identifier")
-      #ANFOid = GetXml(xml, "/anime/resources/resource[@type='3']/externalentity/identifier"), GetXml(xml, "/anime/resources/resource[@type='3']/externalentity/identifier")
+      ANNid  = GetXml(xml, "/anime/resources/resource[@type='1']/externalentity/identifier")
+      #MALids = GetXml(xml, "/anime/resources/resource[@type='2']/externalentity/identifier") 
+      AniDB_IMDbid = GetXml(xml, "/anime/resources/resource[@type='43']/externalentity/identifier")
+      AniDB_TMDbid = GetXml(xml, "/anime/resources/resource[@type='44']/externalentity/identifier")
     
       # Logs
       if not Dict(AniDB_dict, 'summary'):  error_log['AniDB summaries missing'].append("AniDBid: %s" % (common.WEB_LINK % (common.ANIDB_SERIE_URL + AniDBid, AniDBid) + " | Title: '%s'" % Dict(AniDB_dict, 'title')))
@@ -369,12 +370,12 @@ def GetMetadata(media, movie, error_log, source, AniDBid, TVDBid, AniDBMovieSets
       #if metadata.studio       and 'studio' in AniDB_dict and AniDB_dict ['studio'] and AniDB_dict ['studio'] != metadata.studio:  error_log['anime-list studio logos'].append("AniDBid: %s | Title: '%s' | AniDB has studio '%s' and anime-list has '%s' | "    % (common.WEB_LINK % (ANIDB_SERIE_URL % AniDBid, AniDBid), title, metadata.studio, mapping_studio) + common.WEB_LINK % (ANIDB_TVDB_MAPPING_FEEDBACK % ("aid:" + metadata.id + " " + title, String.StripTags( XML.StringFromElement(xml, encoding='utf8'))), "Submit bug report (need GIT account)"))
       #if metadata.studio == "" and 'studio' in AniDB_dict and AniDB_dict ['studio'] == "":                                         error_log['anime-list studio logos'].append("AniDBid: %s | Title: '%s' | AniDB and anime-list are both missing the studio" % (common.WEB_LINK % (ANIDB_SERIE_URL % AniDBid, AniDBid), title) )
     
-      Log.Info("ANNid: '%s', MALids: '%s', xml loaded: '%s'" % (ANNid, MALids, str(xml is not None)))
+      Log.Info("ANNid: '%s', MALids: '%s', IMDbid: '%s', TMDbid: '%s', xml loaded: '%s'" % (ANNid, MALids, AniDB_IMDbid, AniDB_TMDbid, str(xml is not None)))
   
   Log.Info("--- return ---".ljust(157, '-'))
   Log.Info("relations_map: {}".format(DictString(Dict(mappingList, 'relations_map', default={}), 1)))
   Log.Info("AniDB_dict: {}".format(DictString(AniDB_dict, 4)))
-  return AniDB_dict, ANNid, MALids
+  return AniDB_dict, ANNid, MALids, AniDB_TMDbid or TMDbid, AniDB_IMDbid or IMDbid
 
 def GetAniDBTitlesDB():
   ''' Get the AniDB title database
