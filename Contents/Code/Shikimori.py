@@ -1,5 +1,3 @@
-# --- START OF FILE Shikimori.py (ВЕРСИЯ С ИСПОЛЬЗОВАНИЕМ GRAPHQL API) ---
-
 import os
 import re
 import common
