@@ -99,7 +99,26 @@ def GetMetadata(anidb_id=None, mal_id=None):
     # --- Описание ---
     description = Dict(anime_data, 'description')
     if description:
+        # Handle wiki-style links e.g. [[text]] -> text
+        description = re.sub(r'\[\[(.*?)\]\]', r'\1', description)
+
+        # Extract text from tags that have closing tags (e.g. [character=123 slug]Name[/character] -> Name)
+        while True:
+            new_desc = re.sub(r'\[(\w+)[^\]]*\]((?:(?!\[/?\1).)*?)\[/\1\]', r'\2', description, flags=re.DOTALL)
+            if new_desc == description:
+                break
+            description = new_desc
+            
+        # Format standalone tags with slugs (e.g. [character=123 yuken-emma] -> Yuken Emma)
+        def slug_repl(match):
+            slug = match.group(1)
+            if not slug: return ''
+            return ' '.join(word.capitalize() for word in slug.split('-'))
+        description = re.sub(r'\[\w+=\d+\s+([^\]]+)\]', slug_repl, description)
+
         clean_summary = re.sub(r'\[.*?\]|<.*?>', '', description).strip()
+        clean_summary = re.sub(r' +', ' ', clean_summary)
+        
         Log.Info("[Shikimori GraphQL] Found summary.")
         SaveDict(clean_summary, shikimori_dict, 'summary')
 
