@@ -1,3 +1,5 @@
+# --- START OF FILE __init__.py (С ИНТЕГРАЦИЕЙ SHIKIMORI КАК ОТДЕЛЬНОГО ИСТОЧНИКА) ---
+
 # -*- coding: utf-8 -*-
 #
 # To Do
