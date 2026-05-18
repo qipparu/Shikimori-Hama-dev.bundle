@@ -30,7 +30,10 @@ def GetMetadata(media, movie, AniDBid, TVDBid, TMDbid, IMDbid, mappingList):
   Log.Info("Provided IDs -> AniDBid: '{}', TVDBid: '{}', TMDbid: '{}', IMDbid: '{}'".format(AniDBid, TVDBid, TMDbid, IMDbid))
 
   # --- НОВЫЙ БЛОК: Получение TMDB ID через ARM API (самый высокий приоритет) ---
-  if AniDBid and AniDBid.isdigit():
+  if TMDbid:
+      tmdb_id_final = TMDbid
+      Log.Info("Using provided TMDbid: " + TMDbid)
+  elif AniDBid and AniDBid.isdigit():
       Log.Info("Attempting to fetch TMDB ID from ARM API using AniDBid: " + AniDBid)
       arm_url = ARM_API_URL_TEMPLATE.format(id=AniDBid)
       arm_data = common.LoadFile(

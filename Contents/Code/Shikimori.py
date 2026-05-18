@@ -1,5 +1,3 @@
-# --- START OF FILE Shikimori.py (ВЕРСИЯ С ИСПОЛЬЗОВАНИЕМ GRAPHQL API) ---
-
 import os
 import re
 import common
@@ -9,7 +7,7 @@ from common import Log, DictString, Dict, SaveDict
 ARM_API_URL_TEMPLATE = "https://arm.haglund.dev/api/v2/ids?source=anidb&include=myanimelist&id={id}"
 
 # URL для нового GraphQL API Shikimori
-SHIKIMORI_GRAPHQL_URL = "https://shikimori.one/api/graphql"
+SHIKIMORI_GRAPHQL_URL = "https://shikimori.io/api/graphql"
 
 # GraphQL-запрос для получения нужных нам данных (название, описание, жанры)
 SHIKIMORI_ANIME_QUERY = """
@@ -25,7 +23,7 @@ query getAnimeData($id: String!) {
 }
 """.strip()
 
-def GetMetadata(anidb_id=None):
+def GetMetadata(anidb_id=None, mal_id=None):
     """
     Получает метаданные с Shikimori как отдельный источник, используя GraphQL.
     1. Находит Shikimori ID по AniDB ID через ARM API.
@@ -35,21 +33,24 @@ def GetMetadata(anidb_id=None):
     Log.Info("=== Shikimori.GetMetadata() [GraphQL] ===".ljust(157, '='))
     shikimori_dict = {}
 
-    if not anidb_id or not anidb_id.isdigit():
-        Log.Info("No valid AniDB ID provided. Shikimori source skipped.")
+    if mal_id and str(mal_id).isdigit():
+        shikimori_id = str(mal_id)
+        Log.Info("Using provided MAL ID as Shikimori ID: {}".format(shikimori_id))
+    elif anidb_id and anidb_id.isdigit():
+        # --- 1. Получение Shikimori ID (он же MAL ID) через ARM API ---
+        arm_url = ARM_API_URL_TEMPLATE.format(id=anidb_id)
+        Log.Info("Attempting to fetch Shikimori ID from ARM API: {url}".format(url=arm_url))
+
+        arm_data = common.LoadFile(filename=str(anidb_id) + '_arm.json',
+                                   relativeDirectory=os.path.join('Shikimori', 'json', 'arm'),
+                                   url=arm_url,
+                                   cache=CACHE_1WEEK)
+
+        # В контексте нового API, MAL ID - это и есть ID на Shikimori
+        shikimori_id = Dict(arm_data, 'myanimelist')
+    else:
+        Log.Info("No valid AniDB ID or MAL ID provided. Shikimori source skipped.")
         return shikimori_dict
-
-    # --- 1. Получение Shikimori ID (он же MAL ID) через ARM API ---
-    arm_url = ARM_API_URL_TEMPLATE.format(id=anidb_id)
-    Log.Info("Attempting to fetch Shikimori ID from ARM API: {url}".format(url=arm_url))
-
-    arm_data = common.LoadFile(filename=str(anidb_id) + '_arm.json',
-                               relativeDirectory=os.path.join('Shikimori', 'json', 'arm'),
-                               url=arm_url,
-                               cache=CACHE_1WEEK)
-
-    # В контексте нового API, MAL ID - это и есть ID на Shikimori
-    shikimori_id = Dict(arm_data, 'myanimelist')
 
     if not shikimori_id:
         Log.Info("Failed to get Shikimori ID from ARM for AniDB ID {id}.".format(id=anidb_id))
@@ -98,7 +99,26 @@ def GetMetadata(anidb_id=None):
     # --- Описание ---
     description = Dict(anime_data, 'description')
     if description:
+        # Handle wiki-style links e.g. [[text]] -> text
+        description = re.sub(r'\[\[(.*?)\]\]', r'\1', description)
+
+        # Extract text from tags that have closing tags (e.g. [character=123 slug]Name[/character] -> Name)
+        while True:
+            new_desc = re.sub(r'\[(\w+)[^\]]*\]((?:(?!\[/?\1).)*?)\[/\1\]', r'\2', description, flags=re.DOTALL)
+            if new_desc == description:
+                break
+            description = new_desc
+            
+        # Format standalone tags with slugs (e.g. [character=123 yuken-emma] -> Yuken Emma)
+        def slug_repl(match):
+            slug = match.group(1)
+            if not slug: return ''
+            return ' '.join(word.capitalize() for word in slug.split('-'))
+        description = re.sub(r'\[\w+=\d+\s+([^\]]+)\]', slug_repl, description)
+
         clean_summary = re.sub(r'\[.*?\]|<.*?>', '', description).strip()
+        clean_summary = re.sub(r' +', ' ', clean_summary)
+        
         Log.Info("[Shikimori GraphQL] Found summary.")
         SaveDict(clean_summary, shikimori_dict, 'summary')
 
