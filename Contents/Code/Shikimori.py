@@ -9,7 +9,7 @@ from common import Log, DictString, Dict, SaveDict
 ARM_API_URL_TEMPLATE = "https://arm.haglund.dev/api/v2/ids?source=anidb&include=myanimelist&id={id}"
 
 # URL для нового GraphQL API Shikimori
-SHIKIMORI_GRAPHQL_URL = "https://shikimori.one/api/graphql"
+SHIKIMORI_GRAPHQL_URL = "https://shikimori.io/api/graphql"
 
 # GraphQL-запрос для получения нужных нам данных (название, описание, жанры)
 SHIKIMORI_ANIME_QUERY = """
